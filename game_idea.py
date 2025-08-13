@@ -1,14 +1,15 @@
 import pygame
 
 from pygame.locals import *
+import sys
 
 pygame.init()
 
 vec = pygame.math.Vector2
-PYGAME_DETECT_AVX2=1
+
 
 HEIGHT = 450
-WIDTH = 400
+WIDTH = 500
 ACC = 0.5
 FRIC = -0.12
 FPS = 60
@@ -25,19 +26,32 @@ class Player(pygame.sprite.Sprite):
         self.surf.fill((128,255,40))
         self.rect = self.surf.get_rect()
         
-        self.pos = vec((10,385))
+        self.pos = vec((10,200))
         self.vel = vec(0,0)
         self.acc = vec(0,0) 
 
     def move(self):
         self.acc = vec(0,0)
 
-        pressed_keys = pygame.keys.get_pressed()
+        pressed_keys = pygame.key.get_pressed()
 
-        if pressed_keys[K_LEFT]:
+        if pressed_keys[K_a]:
             self.acc.x = -ACC
-        if pressed_keys[K_RIGHT]:
+        if pressed_keys[K_d]:
             self.acc.x = ACC
+
+        self.acc.x += self.vel.x * FRIC
+        self.vel += self.acc
+        self.pos = self.vel + 0.5 * self.acc
+
+
+
+        if self.pos.x > WIDTH:
+            self.pos.x = 0
+        if self.pos.x < 0:
+            self.pos.x = WIDTH
+
+        self.rect.midbottom = self.pos
 
 class platform(pygame.sprite.Sprite):
     def __init__(self):
@@ -54,19 +68,22 @@ all_sprites.add(PT1)
 all_sprites.add(P1)
 
 running = True
-
+ 
 while running:
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
 
+    
+    
 
     displaysurface.fill((0,0,0))
-
+    P1.move()   
     for entity in all_sprites:
         displaysurface.blit(entity.surf, entity.rect) 
 
+    
     pygame.display.update()
     FramePerSec.tick(FPS) 
 
