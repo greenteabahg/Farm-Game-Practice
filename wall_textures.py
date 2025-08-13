@@ -33,7 +33,7 @@ running = True
 ##      and then scaled for the screen. (So no matter what, the ratio is always 20x15)
 
 #           All background sprites
-backdrop = Spritesheet('New Piskel.png')
+backdrop = Spritesheet('EZ_Piskel.png')
 
 wall_TOP = backdrop.get_sprite(64,0,32,32)
 wall_BOT = backdrop.get_sprite(0,32,32,32)
@@ -58,27 +58,13 @@ elements = (floor, wall_TOP, wall_BOT, wall_LEFT, wall_RIGHT, corner_LN, corner_
 
 #background making function##
 
-def get_back():
-    y = 0
-    x = 0
-    placehold = pygame.Surface((Width, Hite))
-    while y < Hite and x < Width:
-        while y < Hite:
-            placehold.blit(random.choice(elements), (x,y))
-            y += 32
-            if y == Hite:
-                x += 32
-                y = 0
-                break
-    return placehold
-
-
 def parse_mat():
     mat = mat_gen()
+    
     x = 0
     y = 0
     placehold = pygame.Surface((Width, Hite))
-    print(mat)
+    #print(mat)
     for index_y, row in enumerate(mat): 
         y = index_y
         for index_x, num in enumerate(row):
