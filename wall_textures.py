@@ -1,24 +1,43 @@
 import pygame
+import random 
+from spritemechs import Spritesheet
 
 pygame.init()
 
-Hite = 500
-Width = 500
+Hite = 480
+Width = 640
 FPS = 60
 
 FramePerSec = pygame.time.Clock()
 
+canvas = pygame.Surface((Width, Hite))
 displaysurf = pygame.display.set_mode((Width, Hite))
 
 running = True
 
 
-### Vector for Entry into Room ?? ###
-entry = pygame.math.Vector2
- 
+######developing background of game#######
+backdrop = Spritesheet('New Piskel.png')
+corner = backdrop.get_sprite(0,0,32,32)
+wall_BOT = backdrop.get_sprite(0,32,32,32)
+floor = backdrop.get_sprite(32,64,32,32) 
 
-##Character Cube##
+elements = (corner, wall_BOT, floor)
+#background making function##
 
+def get_back():
+    y = 0
+    x = 0
+    placehold = pygame.Surface((Width, Hite))
+    while y < Hite and x < Width:
+        while y < Hite:
+            placehold.blit(random.choice(elements), (x,y))
+            y += 32
+            if y == Hite:
+                x += 32
+                y = 0
+                break
+    return placehold
 ##Movement??##
 
 class Player(pygame.sprite.Sprite):
@@ -27,20 +46,11 @@ class Player(pygame.sprite.Sprite):
         self.surf = pygame.Surface((30,30))
         self.surf.fill((128,33,33))
         self.rect = self.surf.get_rect()
-        self.pos = entry(0,0) 
+         
 
-    def move(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:
-            pass  
-        if keys[pygame.K_s]:
-            self.pos.y += -1
-        if keys[pygame.K_d]:
-            self.pos.x += 1
-        if keys[pygame.K_a]:
-            self.pos.x += -1
+   
 
-
+back = get_back()
 P1 = Player() 
 
 
@@ -51,11 +61,8 @@ while running:
             pygame.quit()
             sys.exit()
 
-    displaysurf.fill((0,0,0))
-
-     
-    P1.move() 
-
-    displaysurf.blit(P1.surf, P1.rect) 
-     
+    canvas.fill((0,0,0))
+    canvas.blit(back, (0,0))
+    displaysurf.blit(canvas, (0,0))
+    
     pygame.display.update()
