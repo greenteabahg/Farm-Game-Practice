@@ -1,19 +1,30 @@
 import pygame
 import random 
+import sys
 from spritemechs import Spritesheet
 #from procedural_gen import mat_gen 
 from maps import home_map
+from pygame.locals import *
 
 pygame.init()
 
 Hite = 480
 Width = 640
-FPS = 60
+FPS = 30
+dt = 1/FPS
 
 FramePerSec = pygame.time.Clock()
 
-canvas = pygame.Surface((Width, Hite))
-displaysurf = pygame.display.set_mode((Width, Hite), pygame.SCALED)
+canvas = pygame.Surface((640, 480))
+displaysurf = pygame.display.set_mode((160, 128), pygame.SCALED)
+
+
+
+
+#vector for movement
+vec = pygame.math.Vector2
+ACC = 0.5
+
 
 running = True
 
@@ -83,7 +94,7 @@ def parse_mat(mat):
     return placehold
 
         
-
+back = parse_mat(home_map)
 
 #########################################################################################
 ####################        End Background      #########################################
@@ -102,15 +113,60 @@ def parse_mat(mat):
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.surf = pygame.Surface((30,30))
-        self.surf.fill((128,33,33))
+        self.surf = P1_base ## For test only !! 
         self.rect = self.surf.get_rect()
-         
 
-   
+        self.pos = vec((10,10))
 
-back = parse_mat(home_map) 
-P1 = Player() 
+    def move(self):
+        p_keys = pygame.key.get_pressed()
+        if p_keys[K_s]:
+            self.pos.y += 10
+        if p_keys[K_w]:
+            self.pos.y += -10
+        if p_keys[K_a]:
+            self.pos.x += -10
+        if p_keys[K_d]:
+            self.pos.x += 10
+
+        self.rect.center = self.pos
+
+    ##This creates the window around the player
+    ## I'm basically bliting an area of the canvas that is equal to a 160 by 128 rectangle
+    ##around the player
+    ## the if statements are a clever way of keeping the camera from leaving the canvas
+    ## edges. Essentially, if the x pos of the player is less than half the window size (160),
+    ## then the area taken from the left side of the rect is 0. It is half the window size
+    ## because the player is depicted in the center of the window
+    ## same applies for the y value
+    ## conversely, if the x value approaches halfway between the rightmost canvas edge, then
+    ## the left side of the area taken from the canvas is exactly 160 less than the full canvas size
+
+    def P_view(self):
+        player_view = pygame.surface.Surface((160,128))
+        offset_x = self.pos.x - (160/2)
+        offset_y = self.pos.y - (128/2)
+        if self.pos.x < 160/2:
+            offset_x = 0
+        if self.pos.y < 128/2:
+            offset_y = 0
+        if self.pos.x > 640-80: ## I might should change these to varibles in the future
+            offset_x = 640-160
+        if self.pos.y > 480-64:
+            offset_y = 480-128
+        player_pos = (offset_x, offset_y, 160, 128) 
+
+        player_view.blit(canvas, (0,0), player_pos)
+        return player_view
+
+P1_Sprites = Spritesheet('test_player.png')
+P1_base = P1_Sprites.get_sprite(0,0,32,32)
+P1 = Player()
+
+## Creating a segment that follows the player
+
+
+
 
 
 #####Game Loop##########
@@ -121,7 +177,13 @@ while running:
             sys.exit()
     
     canvas.fill((0,0,0))
-    canvas.blit(back, (0,0))
-    displaysurf.blit(canvas, (0,0))
+    P1.move() 
     
+    canvas.blit(back, (0,0))
+    canvas.blit(P1.surf, P1.rect)
+
+    player_view = P1.P_view()
+    displaysurf.blit(player_view, (0,0))
+
+    FramePerSec.tick(FPS)
     pygame.display.update()
