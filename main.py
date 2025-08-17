@@ -11,7 +11,7 @@ pygame.init()
 Hite = 480
 Width = 640
 FPS = 30
-dt = 1/FPS
+
 
 FramePerSec = pygame.time.Clock()
 
@@ -23,7 +23,7 @@ displaysurf = pygame.display.set_mode((160, 128), pygame.SCALED)
 
 #vector for movement
 vec = pygame.math.Vector2
-ACC = 0.5
+
 
 
 running = True
@@ -53,10 +53,15 @@ running = True
 ##      My next task is to build a background class that defines the inputs from the matrix
 ##      in order to set the colision of the background sprites 
 #           All background sprites
+
+
+
 backdrop = Spritesheet('Test_Background.png')
 
 wall_TOP = backdrop.get_sprite(64,0,32,32)
+wall_TOP_rect = wall_TOP.get_rect()
 wall_BOT = backdrop.get_sprite(0,32,32,32)
+wall_BOT_rect = wall_BOT.get_rect()
 wall_LEFT = backdrop.get_sprite(32,32,32,32)
 wall_RIGHT = backdrop.get_sprite(64,32,32,32)
 
@@ -84,6 +89,7 @@ def parse_mat(mat):
     x = 0
     y = 0
     placehold = pygame.Surface((Width, Hite))
+    
     #print(mat)
     for index_y, row in enumerate(mat): 
         y = index_y
@@ -91,18 +97,66 @@ def parse_mat(mat):
             x = index_x
             
             placehold.blit(elements[num], (x*32, y*32))
+        
+
+            ## I think I have to make a class for the background lol
     return placehold
 
-        
+def collide_map(mat):
+    pass 
+    x = 0
+    y = 0
+    map = []
+    for index_y, row in enumerate(mat):
+        y = index_y
+        for index_x, num in enumerate(row):
+            x = index_x
+            if num != 0:
+                rect_hold = pygame.Rect(x*32,y*32, 32, 32)
+                map.append(rect_hold)
+    return map 
+
+
+#makes the c_map into sprites to work for collision ? 
+#17/08 - Dont think the sprites are the way to go but maybe later i could turn the walls
+# into a class?
+"""class Walls(pygame.sprite.Sprite):
+    def __init__(self):
+        pass"""
+"""
+def c_map_sprites(map):
+    placeholder = pygame.sprite.Group()
+    for item in map:
+        item = pygame.sprite.Sprite
+        placeholder.add(item)
+    return placeholder
+"""
+
+   
+
+
 back = parse_mat(home_map)
+c_map = collide_map(home_map)
+union_c_map = pygame.rect.Rect(-32, 0,10,10)
+union_c_map.unionall(c_map)
+#See note 17/08
+"""
+wall_map = pygame.sprite.Group()
+wall_map = c_map_sprites(c_map)
+"""
 
 #########################################################################################
 ####################        End Background      #########################################
 #########################################################################################
 
+########################################################################################
+####################                   #################################################
+####################     COLLISION     #################################################
+####################                   #################################################
+########################################################################################
 
 
-##Movement??##
+
 
 ########################################################################################
 ####################                   #################################################
@@ -116,7 +170,7 @@ class Player(pygame.sprite.Sprite):
         self.surf = P1_base ## For test only !! 
         self.rect = self.surf.get_rect()
 
-        self.pos = vec((10,10))
+        self.pos = vec((100,100))
 
     def move(self):
         p_keys = pygame.key.get_pressed()
@@ -126,10 +180,22 @@ class Player(pygame.sprite.Sprite):
             self.pos.y += -10
         if p_keys[K_a]:
             self.pos.x += -10
+            self.surf = P1_left
         if p_keys[K_d]:
             self.pos.x += 10
+            self.surf = P1_base
+        ## This doesnt allow the player sprite out of bounds
+        if self.pos.x < 10:
+            self.pos.x = 10
+        if self.pos.y < 5:
+            self.pos.y = 5
+        if self.pos.x > 635:
+            self.pos.x = 635
+        if self.pos.y > 465:
+            self.pos.y = 465
 
         self.rect.center = self.pos
+
 
     ##This creates the window around the player
     ## I'm basically bliting an area of the canvas that is equal to a 160 by 128 rectangle
@@ -141,7 +207,21 @@ class Player(pygame.sprite.Sprite):
     ## same applies for the y value
     ## conversely, if the x value approaches halfway between the rightmost canvas edge, then
     ## the left side of the area taken from the canvas is exactly 160 less than the full canvas size
-
+    def c_test(self):
+        for item in c_map:
+            c = pygame.Rect.colliderect(self.rect, item)
+            #The problem is that my movement makes it so that i move 10 pixels per key press,
+            # so everytime there is an wall, I still can move 10 blocks into it
+            if c and item.x < self.pos.x:
+                self.rect.left = item.right
+            if c and item.x > self.pos.x:
+                self.pos.x = item.x - 11
+            if c and item.y < self.pos.y:
+               self.rect.top = item.bottom
+            if c and item.y > self.pos.y:
+               self.pos.y = item.y - 32
+                
+        
     def P_view(self):
         player_view = pygame.surface.Surface((160,128))
         offset_x = self.pos.x - (160/2)
@@ -158,9 +238,13 @@ class Player(pygame.sprite.Sprite):
 
         player_view.blit(canvas, (0,0), player_pos)
         return player_view
+    ## To be done latah 
+    
 
-P1_Sprites = Spritesheet('test_player.png')
+
+P1_Sprites = Spritesheet('test_player_2.png')
 P1_base = P1_Sprites.get_sprite(0,0,32,32)
+P1_left = P1_Sprites.get_sprite(32,0,32,32)
 P1 = Player()
 
 ## Creating a segment that follows the player
@@ -178,6 +262,7 @@ while running:
     
     canvas.fill((0,0,0))
     P1.move() 
+    P1.c_test()
     
     canvas.blit(back, (0,0))
     canvas.blit(P1.surf, P1.rect)
