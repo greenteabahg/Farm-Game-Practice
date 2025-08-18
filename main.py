@@ -54,33 +54,101 @@ running = True
 ##      in order to set the colision of the background sprites 
 #           All background sprites
 
+class Background:
+    def __init__(self, filename):
+        self.spritesheet = Spritesheet(filename)
+        self.wall_TOP = self.spritesheet.get_sprite(64,0,32,32)
+        self.wall_BOT = self.spritesheet.get_sprite(0,32,32,32)
+        self.wall_LEFT = self.spritesheet.get_sprite(32,32,32,32)
+        self.wall_RIGHT = self.spritesheet.get_sprite(64,32,32,32)
+        self.wall_FULL = self.spritesheet.get_sprite(32,0,32,32)
+
+        self.floor = self.spritesheet.get_sprite(32,64,32,32)
+
+        self.corner_RN = self.spritesheet.get_sprite(0,0,32,32)
+        self.corner_LN = pygame.transform.rotate(self.corner_RN, 90)
+        self.corner_LS = pygame.transform.rotate(self.corner_RN, 180)
+        self.corner_RS = pygame.transform.rotate(self.corner_RN, 270)
+
+        self.elements = (self.floor, self.wall_TOP, self.wall_BOT, self.wall_LEFT, self.wall_RIGHT, 
+                self.corner_LN, self.corner_RN, self.corner_RS, self.corner_LS, self.wall_FULL)
+        #All wall sprites
+        self.group_wall = pygame.sprite.Group()
+
+        #Specific wall sprites
+        self.group_wall_top = pygame.sprite.Group()#1
+        self.group_wall_bot = pygame.sprite.Group() #2
+        self.group_wall_left = pygame.sprite.Group() #3
+        self.group_wall_right = pygame.sprite.Group() #4
+        self.group_wall_corner_LN = pygame.sprite.Group() #5
+        self.group_wall_corner_RN = pygame.sprite.Group() #6
+        self.group_wall_corner_RS = pygame.sprite.Group() #7
+        self.group_wall_corner_LS = pygame.sprite.Group() #8
+        
+        
 
 
-backdrop = Spritesheet('Test_Background.png')
+    def parse_mat(self, matrix):
+        x = 0
+        y = 0
+        placehold = pygame.Surface((Width, Hite))
+    
+        #print(matrix)
+        for index_y, row in enumerate(matrix): 
+            y = index_y
+            for index_x, num in enumerate(row):
+                x = index_x
+            
+                placehold.blit(self.elements[num], (x*32, y*32))   
 
-wall_TOP = backdrop.get_sprite(64,0,32,32)
-wall_TOP_rect = wall_TOP.get_rect()
-wall_BOT = backdrop.get_sprite(0,32,32,32)
-wall_BOT_rect = wall_BOT.get_rect()
-wall_LEFT = backdrop.get_sprite(32,32,32,32)
-wall_RIGHT = backdrop.get_sprite(64,32,32,32)
+            ## I think I have to make a class for the background lol
+        return placehold
 
-wall_FULL = backdrop.get_sprite(32,0,32,32)
+    def collide_map(self, matrix):
+        x = 0
+        y = 0
+        map = []
+        for index_y, row in enumerate(matrix):
+            y = index_y
+            for index_x, num in enumerate(row):
+                x = index_x
+                if num != 0:
+                    rect_hold = pygame.Rect(x*32,y*32, 32, 32)
+                    map.append(rect_hold)
+                    sprite_hold = pygame.sprite.Sprite()
+                    sprite_hold.rect = rect_hold
+                    self.group_wall.add(sprite_hold)
+                    if num == 1:
+                        self.group_wall_top.add(sprite_hold)
+                    if num == 2:
+                        self.group_wall_bot.add(sprite_hold)
+                    if num == 3:
+                        self.group_wall_left.add(sprite_hold)
+                    if num == 4:
+                        self.group_wall_right.add(sprite_hold)
+                    if num == 5:
+                        self.group_wall_corner_LN.add(sprite_hold)
+                    if num == 6:
+                        self.group_wall_corner_RN.add(sprite_hold)
+                    if num == 7:
+                        self.group_wall_corner_RS.add(sprite_hold)
+                        print(sprite_hold.rect.x)
+                    if num == 8:
+                        self.group_wall_corner_LS.add(sprite_hold)
+                    
+        return map 
 
 
-floor = backdrop.get_sprite(32,64,32,32) 
 
-corner_RN = backdrop.get_sprite(0,0,32,32)
-corner_LN = pygame.transform.rotate(corner_RN, 90)
-corner_LS = pygame.transform.rotate(corner_RN, 180)
-corner_RS = pygame.transform.rotate(corner_RN, 270)
+holla = Background('Test_Background.png')
 
 
+yolo = holla.parse_mat(home_map)
+yolo_map = holla.collide_map(home_map)
+print(holla.group_wall)
 
-elements = (floor, wall_TOP, wall_BOT, wall_LEFT, wall_RIGHT, corner_LN, corner_RN,
- corner_RS, corner_LS, wall_FULL)
-
-
+#old background stuff
+"""
 #background making function##
 
 def parse_mat(mat):
@@ -103,7 +171,7 @@ def parse_mat(mat):
     return placehold
 
 def collide_map(mat):
-    pass 
+    
     x = 0
     y = 0
     map = []
@@ -115,7 +183,7 @@ def collide_map(mat):
                 rect_hold = pygame.Rect(x*32,y*32, 32, 32)
                 map.append(rect_hold)
     return map 
-
+"""
 
 #makes the c_map into sprites to work for collision ? 
 #17/08 - Dont think the sprites are the way to go but maybe later i could turn the walls
@@ -132,13 +200,15 @@ def c_map_sprites(map):
     return placeholder
 """
 
-   
-
-
+# A part of old background stuff
+"""
 back = parse_mat(home_map)
+
 c_map = collide_map(home_map)
 union_c_map = pygame.rect.Rect(-32, 0,10,10)
 union_c_map.unionall(c_map)
+"""
+
 #See note 17/08
 """
 wall_map = pygame.sprite.Group()
@@ -207,20 +277,53 @@ class Player(pygame.sprite.Sprite):
     ## same applies for the y value
     ## conversely, if the x value approaches halfway between the rightmost canvas edge, then
     ## the left side of the area taken from the canvas is exactly 160 less than the full canvas size
+    
     def c_test(self):
-        for item in c_map:
-            c = pygame.Rect.colliderect(self.rect, item)
+        T = pygame.sprite.spritecollide(P1, holla.group_wall_top, False)  
+        if T:
+            self.pos.y = T[0].rect.top - 20
+
+        B = pygame.sprite.spritecollide(P1, holla.group_wall_bot, False)
+        if B:
+            self.pos.y = B[0].rect.bottom + 11
+
+        L = pygame.sprite.spritecollide(P1, holla.group_wall_left, False)
+        if L:
+            self.pos.x = L[0].rect.left - 11
+
+        R = pygame.sprite.spritecollide(P1, holla.group_wall_right, False)
+        if R:
+            self.pos.x = R[0].rect.right + 11
+        LN = pygame.sprite.spritecollide(P1, holla.group_wall_corner_LN, False)
+        if LN:
+            if LN and self.pos.x < LN[0].rect.x:
+                self.pos.x = LN[0].rect.left - 11
+            if LN and self.pos.x >= LN[0].rect.x:
+                self.pos.y = LN[0].rect.top - 20
+        
+        RN = pygame.sprite.spritecollide(P1, holla.group_wall_corner_RN, False)
+        if RN:
+            if RN and self.pos.x > RN[0].rect.x + 32:
+                self.pos.x = RN[0].rect.right + 11
+            if RN and self.pos.x <= RN[0].rect.x + 32:
+                self.pos.y = RN[0].rect.top - 20
+        
+        LS = pygame.sprite.spritecollide(P1, holla.group_wall_corner_LS, False)
+        if LS:
+            if LS and self.pos.x <= LS[0].rect.x:
+                self.pos.x = LS[0].rect.left - 11
+            if LS and self.pos.x > LS[0].rect.x:
+                self.pos.y = LS[0].rect.bottom + 11
+        
+        RS = pygame.sprite.spritecollide(P1, holla.group_wall_corner_RS, False)
+        if RS:
+            if RS and self.pos.x > RS[0].rect.x + 32:
+                self.pos.x = RS[0].rect.right + 11
+            if RS and self.pos.x <=RS[0].rect.x + 32:
+                self.pos.y = RS[0].rect.bottom + 11
             #The problem is that my movement makes it so that i move 10 pixels per key press,
             # so everytime there is an wall, I still can move 10 blocks into it
-            if c and item.x < self.pos.x:
-                self.rect.left = item.right
-            if c and item.x > self.pos.x:
-                self.pos.x = item.x - 11
-            if c and item.y < self.pos.y:
-               self.rect.top = item.bottom
-            if c and item.y > self.pos.y:
-               self.pos.y = item.y - 32
-                
+
         
     def P_view(self):
         player_view = pygame.surface.Surface((160,128))
@@ -261,12 +364,13 @@ while running:
             sys.exit()
     
     canvas.fill((0,0,0))
-    P1.move() 
+    P1.move()
+
     P1.c_test()
     
-    canvas.blit(back, (0,0))
+    canvas.blit(yolo, (0,0))
     canvas.blit(P1.surf, P1.rect)
-
+    
     player_view = P1.P_view()
     displaysurf.blit(player_view, (0,0))
 
