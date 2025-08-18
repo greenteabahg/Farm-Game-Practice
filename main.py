@@ -5,6 +5,8 @@ from spritemechs import Spritesheet
 #from procedural_gen import mat_gen 
 from maps import home_map
 from pygame.locals import *
+#thigns to do:
+# Update Movement (Eventually)
 
 pygame.init()
 
@@ -12,8 +14,10 @@ Hite = 480
 Width = 640
 FPS = 30
 
-
+#Time shit
 FramePerSec = pygame.time.Clock()
+
+animation_cooldown = 500
 
 canvas = pygame.Surface((640, 480))
 displaysurf = pygame.display.set_mode((160, 128), pygame.SCALED)
@@ -138,95 +142,15 @@ class Background:
                     
         return map 
 
-
-
+#I need to change these names lol
 holla = Background('Test_Background.png')
-
 
 yolo = holla.parse_mat(home_map)
 yolo_map = holla.collide_map(home_map)
-print(holla.group_wall)
-
-#old background stuff
-"""
-#background making function##
-
-def parse_mat(mat):
-    
-    
-    x = 0
-    y = 0
-    placehold = pygame.Surface((Width, Hite))
-    
-    #print(mat)
-    for index_y, row in enumerate(mat): 
-        y = index_y
-        for index_x, num in enumerate(row):
-            x = index_x
-            
-            placehold.blit(elements[num], (x*32, y*32))
-        
-
-            ## I think I have to make a class for the background lol
-    return placehold
-
-def collide_map(mat):
-    
-    x = 0
-    y = 0
-    map = []
-    for index_y, row in enumerate(mat):
-        y = index_y
-        for index_x, num in enumerate(row):
-            x = index_x
-            if num != 0:
-                rect_hold = pygame.Rect(x*32,y*32, 32, 32)
-                map.append(rect_hold)
-    return map 
-"""
-
-#makes the c_map into sprites to work for collision ? 
-#17/08 - Dont think the sprites are the way to go but maybe later i could turn the walls
-# into a class?
-"""class Walls(pygame.sprite.Sprite):
-    def __init__(self):
-        pass"""
-"""
-def c_map_sprites(map):
-    placeholder = pygame.sprite.Group()
-    for item in map:
-        item = pygame.sprite.Sprite
-        placeholder.add(item)
-    return placeholder
-"""
-
-# A part of old background stuff
-"""
-back = parse_mat(home_map)
-
-c_map = collide_map(home_map)
-union_c_map = pygame.rect.Rect(-32, 0,10,10)
-union_c_map.unionall(c_map)
-"""
-
-#See note 17/08
-"""
-wall_map = pygame.sprite.Group()
-wall_map = c_map_sprites(c_map)
-"""
 
 #########################################################################################
 ####################        End Background      #########################################
 #########################################################################################
-
-########################################################################################
-####################                   #################################################
-####################     COLLISION     #################################################
-####################                   #################################################
-########################################################################################
-
-
-
 
 ########################################################################################
 ####################                   #################################################
@@ -241,19 +165,29 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.surf.get_rect()
 
         self.pos = vec((100,100))
+        self.update_time = pygame.time.get_ticks()
+        self.frame = 0
 
     def move(self):
         p_keys = pygame.key.get_pressed()
+        
+        if not any(p_keys):
+            self.surf = P1_base
         if p_keys[K_s]:
             self.pos.y += 10
         if p_keys[K_w]:
             self.pos.y += -10
         if p_keys[K_a]:
             self.pos.x += -10
-            self.surf = P1_left
+            
         if p_keys[K_d]:
             self.pos.x += 10
-            self.surf = P1_base
+            if self.frame == 8:
+                self.frame = 0
+            if current_time - self.update_time >= 100: #150 = ani cooldown
+                self.surf = walking_right_animation[self.frame]
+                self.frame += 1
+                self.update_time = current_time
         ## This doesnt allow the player sprite out of bounds
         if self.pos.x < 10:
             self.pos.x = 10
@@ -267,16 +201,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.center = self.pos
 
 
-    ##This creates the window around the player
-    ## I'm basically bliting an area of the canvas that is equal to a 160 by 128 rectangle
-    ##around the player
-    ## the if statements are a clever way of keeping the camera from leaving the canvas
-    ## edges. Essentially, if the x pos of the player is less than half the window size (160),
-    ## then the area taken from the left side of the rect is 0. It is half the window size
-    ## because the player is depicted in the center of the window
-    ## same applies for the y value
-    ## conversely, if the x value approaches halfway between the rightmost canvas edge, then
-    ## the left side of the area taken from the canvas is exactly 160 less than the full canvas size
+    #makes the player hit walls
     
     def c_test(self):
         T = pygame.sprite.spritecollide(P1, holla.group_wall_top, False)  
@@ -324,7 +249,8 @@ class Player(pygame.sprite.Sprite):
             #The problem is that my movement makes it so that i move 10 pixels per key press,
             # so everytime there is an wall, I still can move 10 blocks into it
 
-        
+    
+    # This creates the window around teh player
     def P_view(self):
         player_view = pygame.surface.Surface((160,128))
         offset_x = self.pos.x - (160/2)
@@ -345,12 +271,26 @@ class Player(pygame.sprite.Sprite):
     
 
 
-P1_Sprites = Spritesheet('test_player_2.png')
+P1_Sprites = Spritesheet('farmer.png')
 P1_base = P1_Sprites.get_sprite(0,0,32,32)
-P1_left = P1_Sprites.get_sprite(32,0,32,32)
+
+#Walking right animation
+P1_WR_Frame1 = P1_Sprites.get_sprite(32,0,32,32)
+P1_WR_Frame2 = P1_Sprites.get_sprite(64,0,32,32)
+P1_WR_Frame3 = P1_Sprites.get_sprite(0,32,32,32)
+P1_WR_Frame4 = P1_Sprites.get_sprite(64,0,32,32)
+P1_WR_Frame5 = P1_Sprites.get_sprite(32,0,32,32)
+P1_WR_Frame6 = P1_Sprites.get_sprite(0,64,32,32)
+P1_WR_Frame7 = P1_Sprites.get_sprite(32,64,32,32)
+P1_WR_Frame8 = P1_Sprites.get_sprite(0,64,32,32)
+
+walking_right_animation = (P1_WR_Frame1, P1_WR_Frame2, P1_WR_Frame3, P1_WR_Frame4, P1_WR_Frame5, 
+P1_WR_Frame6, P1_WR_Frame7, P1_WR_Frame8)
 P1 = Player()
 
-## Creating a segment that follows the player
+
+
+# For animations
 
 
 
@@ -363,6 +303,8 @@ while running:
             pygame.quit()
             sys.exit()
     
+    current_time = pygame.time.get_ticks()
+
     canvas.fill((0,0,0))
     P1.move()
 
