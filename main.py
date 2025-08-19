@@ -22,12 +22,17 @@ animation_cooldown = 500
 canvas = pygame.Surface((640, 480))
 displaysurf = pygame.display.set_mode((160, 128), pygame.SCALED)
 
+#Inventory Surface
+inv_surf = pygame.Surface((160,128))
+
 
 
 
 #vector for movement
 vec = pygame.math.Vector2
-
+ #music
+back_mus = pygame.mixer.music.load('Stefano Vita - Once Upon A Time.mp3')
+pygame.mixer.music.play(-1)
 
 
 running = True
@@ -168,9 +173,14 @@ class Player(pygame.sprite.Sprite):
         self.update_time = pygame.time.get_ticks()
         self.frame = 0
 
+        #health?
+        self.health = 100
+        self.damage = False
+
     def move(self):
         p_keys = pygame.key.get_pressed()
         
+        #added animation frames and shi
         if not any(p_keys):
             self.surf = P1_base
         if p_keys[K_s]:
@@ -292,9 +302,56 @@ P1 = Player()
 
 # For animations
 
+########################################################################################
+####################                   #################################################
+####################     UI            #################################################
+####################                   #################################################
+########################################################################################
 
+ui_sprites = Spritesheet('UI items.png')
+2
 
+class UI:
+    def __init__(self):
+        self.inv_chest_surf = ui_sprites.get_sprite(13, 5, 17, 13)
+        self.inv_block_surf = ui_sprites.get_sprite(0, 5, 13, 13)
+        self.heart_full_surf = ui_sprites.get_sprite(0, 20, 10, 8)
+        self.heart_empty_surf = ui_sprites.get_sprite(10, 20, 10, 8)
 
+        self.inv_chest_surf_mouse = ui_sprites.get_sprite(13, 37, 20, 15)
+
+        self.heart_full_surf_Big = ui_sprites.get_sprite(0, 52, 10, 9)
+        self.health_num = P1.health/10
+        self.health_num = int(self.health_num)
+
+    def show(self):
+        if mouse_pos_x < 140 or mouse_pos_y < 113:
+            displaysurf.blit(self.inv_chest_surf, (140,113))
+        else:
+            displaysurf.blit(self.inv_chest_surf_mouse, (140,113))
+
+        #Healthbar
+        #Eventually i'll add the healthbar animation from the UI items.png
+        if not P1.damage: 
+            for i in range(self.health_num):
+                displaysurf.blit(self.heart_full_surf, (i*8, 0))
+            for i in range(10):
+                displaysurf.blit(self.heart_empty_surf, ((i*8 + 1) , 0))
+        else:
+            pass
+
+    def inventory(self):
+
+        inv_running = False
+        if mouse_pos_x > 140 and mouse_pos_y > 113:
+            if pygame.mouse.get_pressed()[0]:
+                running = False
+                inv_running = True 
+        while inv_running:
+            
+            inv_surf.fill((0,0,0))
+            displaysurf.blit(inv_surf, (0,0))
+UI = UI() 
 
 #####Game Loop##########
 while running:
@@ -302,19 +359,31 @@ while running:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-    
+    #Used for animating
     current_time = pygame.time.get_ticks()
+
+    #Mouse pos
+    #the prob w mouse pos is that it is for the screen. i need a function to determine the
+    #ultimate pos of the mouse within the actual surface
+    mouse_pos = pygame.mouse.get_pos() 
+    mouse_pos_x = mouse_pos[0]
+    mouse_pos_y = mouse_pos[1]
 
     canvas.fill((0,0,0))
     P1.move()
 
     P1.c_test()
     
+    
     canvas.blit(yolo, (0,0))
     canvas.blit(P1.surf, P1.rect)
+    #test
+    #canvas.blit(UI.heart_full_surf_Big, (0,0))
     
     player_view = P1.P_view()
     displaysurf.blit(player_view, (0,0))
+    UI.show() 
+    UI.inventory()
 
     FramePerSec.tick(FPS)
     pygame.display.update()
