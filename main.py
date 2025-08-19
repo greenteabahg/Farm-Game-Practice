@@ -23,7 +23,7 @@ canvas = pygame.Surface((640, 480))
 displaysurf = pygame.display.set_mode((160, 128), pygame.SCALED)
 
 #Inventory Surface
-inv_surf = pygame.Surface((160,128))
+
 
 
 
@@ -36,7 +36,10 @@ pygame.mixer.music.play(-1)
 
 
 running = True
-
+#trying to implement pausing
+paused = False
+global inv_paused
+inv_paused = False
 ########################################################################################
 ####################                   #################################################
 ####################     BACKGROUND    #################################################
@@ -342,18 +345,78 @@ class UI:
 
     def inventory(self):
 
-        inv_running = False
-        if mouse_pos_x > 140 and mouse_pos_y > 113:
-            if pygame.mouse.get_pressed()[0]:
-                running = False
-                inv_running = True 
-        while inv_running:
+       
+
+        inv_surf_border = pygame.surface.Surface((130,98))
+        inv_surf = pygame.surface.Surface((128,96))
+        inv_surf_border.fill((10,0,0))
+        inv_surf.fill((209,200,200)) #off white
+
+        inv_surf_border.blit(inv_surf, (1,1))
+
+        #getting center of inv for screen
+        inv_surf_rect = inv_surf_border.get_rect()
+        center_p = player_view.get_rect()
+        inv_surf_rect.center = center_p.center
+        (x,y) = inv_surf_rect.x, inv_surf_rect.y
+
+        #Exit Button
+        inv_exit = Button(25,12 , (10,10,10), "Exit", (100,100,100), (100,80))
+        inv_exit.show(inv_surf_border)
+        displaysurf.blit(inv_surf_border, (x,y) )
+        inv_return = False 
+        inv_return = inv_exit.pressed()
+        if inv_return == True:
+            print(mouse_pos)
+            inv_paused = False
             
-            inv_surf.fill((0,0,0))
-            displaysurf.blit(inv_surf, (0,0))
+        
+
+       
+            
+            
 UI = UI() 
 
+class Button:
+    def __init__(self, x, y, color, words, word_color, position):
+        #allowing program to define button size/color
+        self.surf = pygame.surface.Surface((x,y))
+        self.rect = self.surf.get_rect()
+        self.color = self.surf.fill((color))
+
+        self.text_size = x * y / 20
+        self.text_size = int(self.text_size)
+        
+        #button font + text
+        self.font = pygame.font.SysFont('freesans', self.text_size)
+        self.text = self.font.render(words, False, word_color)
+        
+        #position args
+        self.pos = position
+        self.pos_x = position[0]
+        self.pos_y = position[1]
+        self.x = x 
+        self.y = y
+        
+    def show(self, location):
+        #Find center of button and text surf
+        #Tbh text looks godawful at this scale lol
+        
+        center_find = self.text.get_rect() 
+        center_find.center = self.rect.center
+        (x,y) = center_find.x, center_find.y
+        self.surf.blit(self.text,(x,y))
+        #Put text on button
+        location.blit(self.surf, self.pos)
+        #for pressed
+        
+        
+    def pressed(self):
+        if mouse_pos_x <= self.pos_x + self.x and mouse_pos_x > self.pos_x and mouse_pos_y <= self.pos_y + self.y and mouse_pos_y > self.pos_y and pygame.mouse.get_pressed()[0]:
+            return True
+            
 #####Game Loop##########
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -369,21 +432,31 @@ while running:
     mouse_pos_x = mouse_pos[0]
     mouse_pos_y = mouse_pos[1]
 
-    canvas.fill((0,0,0))
-    P1.move()
+    if mouse_pos_x > 140 and mouse_pos_y > 113:
+            if pygame.mouse.get_pressed()[0]:
+                
+                inv_paused = True 
 
-    P1.c_test()
+    # Normal Game essentially
+    if not inv_paused:
+            canvas.fill((0,0,0))
+            P1.move()
+
+            P1.c_test()
     
     
-    canvas.blit(yolo, (0,0))
-    canvas.blit(P1.surf, P1.rect)
+            canvas.blit(yolo, (0,0))
+            canvas.blit(P1.surf, P1.rect)
     #test
     #canvas.blit(UI.heart_full_surf_Big, (0,0))
     
-    player_view = P1.P_view()
-    displaysurf.blit(player_view, (0,0))
-    UI.show() 
-    UI.inventory()
-
+            player_view = P1.P_view()
+            displaysurf.blit(player_view, (0,0))
+            UI.show() 
+            
+    #Game paused for inventory
+    if inv_paused:
+        UI.inventory()
+        
     FramePerSec.tick(FPS)
     pygame.display.update()
