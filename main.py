@@ -346,30 +346,43 @@ class UI:
     def inventory(self):
 
        
-
+        #border around inv scree
         inv_surf_border = pygame.surface.Surface((130,98))
+        #actual surface of the inv screen
         inv_surf = pygame.surface.Surface((128,96))
+        #setting surf colors
         inv_surf_border.fill((10,0,0))
         inv_surf.fill((209,200,200)) #off white
 
+        #putting the inv screen on the border
         inv_surf_border.blit(inv_surf, (1,1))
 
         #getting center of inv for screen
         inv_surf_rect = inv_surf_border.get_rect()
+        #finding center of players view (screen actually shown)
         center_p = player_view.get_rect()
         inv_surf_rect.center = center_p.center
+        #finding coords for placing the surface so that the center is in the middle
+        #of the players view
         (x,y) = inv_surf_rect.x, inv_surf_rect.y
+        
 
         #Exit Button
-        inv_exit = Button(25,12 , (10,10,10), "Exit", (100,100,100), (100,80))
-        inv_exit.show(inv_surf_border)
-        displaysurf.blit(inv_surf_border, (x,y) )
-        inv_return = False 
-        inv_return = inv_exit.pressed()
-        if inv_return == True:
-            print(mouse_pos)
-            inv_paused = False
-            
+        self.inv_exit = Button(25,12 , (10,10,10), "Exit", (100,100,100), (100,80))
+        #func to display the button
+        self.inv_exit.show(inv_surf_border)
+        #putting the actuall inventory on the screen, with full functionality (in theory)
+        displaysurf.blit(inv_surf_border, (x,y))
+        #updating button relative to player_view
+        #the x/y are where the new screen is, but this is probably not perfect
+        self.inv_exit.update_pos(inv_surf_border, x,y)
+
+    def exit_test(self): #and now we try to make the button work
+        inv_test = self.inv_exit.pressed()
+        if inv_test == True:
+            return False
+        else:
+            return True
         
 
        
@@ -380,40 +393,64 @@ UI = UI()
 class Button:
     def __init__(self, x, y, color, words, word_color, position):
         #allowing program to define button size/color
+        self.position = position
+        
+        #surface and rec and color of button
         self.surf = pygame.surface.Surface((x,y))
         self.rect = self.surf.get_rect()
         self.color = self.surf.fill((color))
 
+        #text size, calculated by a flat rate of the button size 
         self.text_size = x * y / 20
+        #make it into an int so its passable as a size in self.font
         self.text_size = int(self.text_size)
         
         #button font + text
         self.font = pygame.font.SysFont('freesans', self.text_size)
         self.text = self.font.render(words, False, word_color)
         
-        #position args
-        self.pos = position
-        self.pos_x = position[0]
-        self.pos_y = position[1]
+        #position args for determining where the hitbox of the button is 
         self.x = x 
-        self.y = y
+        self.y = y 
+
+        #hitbox for clicking
+        self.hitbox_rect = self.surf.get_rect(topleft=self.position)
+        
+        
         
     def show(self, location):
         #Find center of button and text surf
-        #Tbh text looks godawful at this scale lol
+        #Tbh text looks godawful at this scale lol (the font text lol)
         
         center_find = self.text.get_rect() 
         center_find.center = self.rect.center
         (x,y) = center_find.x, center_find.y
-        self.surf.blit(self.text,(x,y))
-        #Put text on button
-        location.blit(self.surf, self.pos)
-        #for pressed
+
+        #put text on button
+        self.surf.blit(self.text, (x,y))
+        #Put button on surface
+        location.blit(self.surf, self.position)
+        #I need to find a new location for the button
+    
+        ##The problem is the coords are for the screen and not for the actual position of the button,
+        ##which gets blitted onto the inventory surface
+    #allows buttons in menus to be updated relative to their position on the screen
+    def update_pos(self, location, x,y):
+        self.offset_x = x 
+        self.offset_y = y
+        #do I need this ? 
+        self.location_rect = location.get_rect(topleft = (x,y)) 
         
-        
+
     def pressed(self):
-        if mouse_pos_x <= self.pos_x + self.x and mouse_pos_x > self.pos_x and mouse_pos_y <= self.pos_y + self.y and mouse_pos_y > self.pos_y and pygame.mouse.get_pressed()[0]:
-            return True
+        #calculates rect pos with offset from where the new screen is added 
+        rect_pos_x = self.hitbox_rect.x + self.offset_x
+        rect_pos_y = self.hitbox_rect.y + self.offset_y
+
+        if rect_pos_x < mouse_pos_x < rect_pos_x + self.rect.w and rect_pos_y <= mouse_pos_y <= rect_pos_y + self.rect.h:
+            if pygame.mouse.get_pressed()[0]:
+                
+                return True
             
 #####Game Loop##########
 
@@ -457,6 +494,9 @@ while running:
     #Game paused for inventory
     if inv_paused:
         UI.inventory()
+        inv_exit_test = UI.exit_test()
+        inv_paused = inv_exit_test
+
         
     FramePerSec.tick(FPS)
     pygame.display.update()
