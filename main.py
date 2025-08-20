@@ -1,6 +1,7 @@
 import pygame
 import random 
 import sys
+import math
 from spritemechs import Spritesheet
 #from procedural_gen import mat_gen 
 from maps import home_map
@@ -40,6 +41,9 @@ running = True
 paused = False
 global inv_paused
 inv_paused = False
+
+
+
 ########################################################################################
 ####################                   #################################################
 ####################     BACKGROUND    #################################################
@@ -66,6 +70,16 @@ inv_paused = False
 ##      in order to set the colision of the background sprites 
 #           All background sprites
 
+#Okay, eventually I will have one background png with all the possible png sprites on it, 
+#which will mitigate the issue of having to pull different photos from different pngs 
+#and only having a class that has one thing lol
+###
+###
+###  Test Background Sprites
+###
+###
+tilled_floor_SS = Spritesheet('tilled_farmland.png')
+tilled_floor = tilled_floor_SS.get_sprite(0,0,32,32)
 class Background:
     def __init__(self, filename):
         self.spritesheet = Spritesheet(filename)
@@ -74,8 +88,11 @@ class Background:
         self.wall_LEFT = self.spritesheet.get_sprite(32,32,32,32)
         self.wall_RIGHT = self.spritesheet.get_sprite(64,32,32,32)
         self.wall_FULL = self.spritesheet.get_sprite(32,0,32,32)
-
+        
+        #floor sprites, I could put them at the end and assign them negative values ?
         self.floor = self.spritesheet.get_sprite(32,64,32,32)
+        self.tilled_floor = tilled_floor
+
 
         self.corner_RN = self.spritesheet.get_sprite(0,0,32,32)
         self.corner_LN = pygame.transform.rotate(self.corner_RN, 90)
@@ -83,7 +100,7 @@ class Background:
         self.corner_RS = pygame.transform.rotate(self.corner_RN, 270)
 
         self.elements = (self.floor, self.wall_TOP, self.wall_BOT, self.wall_LEFT, self.wall_RIGHT, 
-                self.corner_LN, self.corner_RN, self.corner_RS, self.corner_LS, self.wall_FULL)
+                self.corner_LN, self.corner_RN, self.corner_RS, self.corner_LS, self.wall_FULL, self.tilled_floor)
         #All wall sprites
         self.group_wall = pygame.sprite.Group()
 
@@ -124,7 +141,7 @@ class Background:
             y = index_y
             for index_x, num in enumerate(row):
                 x = index_x
-                if num != 0:
+                if num != 0 or 10: #10 is the test tilled_floor, it needs no collide map
                     rect_hold = pygame.Rect(x*32,y*32, 32, 32)
                     map.append(rect_hold)
                     sprite_hold = pygame.sprite.Sprite()
@@ -143,18 +160,20 @@ class Background:
                     if num == 6:
                         self.group_wall_corner_RN.add(sprite_hold)
                     if num == 7:
-                        self.group_wall_corner_RS.add(sprite_hold)
-                        print(sprite_hold.rect.x)
+                        self.group_wall_corner_RS.add(sprite_hold)                   
                     if num == 8:
                         self.group_wall_corner_LS.add(sprite_hold)
                     
         return map 
 
 #I need to change these names lol
-holla = Background('Test_Background.png')
+backdrop = Background('Test_Background.png')
+#background to update in game
+rw_com_garden = home_map # home map stays og this way
 
-yolo = holla.parse_mat(home_map)
-yolo_map = holla.collide_map(home_map)
+#moved the two funcs below into the while running loop
+#yolo = backdrop.parse_mat(home_map)
+#yolo_map = backdrop.collide_map(home_map)
 
 #########################################################################################
 ####################        End Background      #########################################
@@ -212,48 +231,48 @@ class Player(pygame.sprite.Sprite):
             self.pos.y = 465
 
         self.rect.center = self.pos
-
+    
 
     #makes the player hit walls
     
     def c_test(self):
-        T = pygame.sprite.spritecollide(P1, holla.group_wall_top, False)  
+        T = pygame.sprite.spritecollide(P1, backdrop.group_wall_top, False)  
         if T:
             self.pos.y = T[0].rect.top - 20
 
-        B = pygame.sprite.spritecollide(P1, holla.group_wall_bot, False)
+        B = pygame.sprite.spritecollide(P1, backdrop.group_wall_bot, False)
         if B:
             self.pos.y = B[0].rect.bottom + 11
 
-        L = pygame.sprite.spritecollide(P1, holla.group_wall_left, False)
+        L = pygame.sprite.spritecollide(P1, backdrop.group_wall_left, False)
         if L:
             self.pos.x = L[0].rect.left - 11
 
-        R = pygame.sprite.spritecollide(P1, holla.group_wall_right, False)
+        R = pygame.sprite.spritecollide(P1, backdrop.group_wall_right, False)
         if R:
             self.pos.x = R[0].rect.right + 11
-        LN = pygame.sprite.spritecollide(P1, holla.group_wall_corner_LN, False)
+        LN = pygame.sprite.spritecollide(P1, backdrop.group_wall_corner_LN, False)
         if LN:
             if LN and self.pos.x < LN[0].rect.x:
                 self.pos.x = LN[0].rect.left - 11
             if LN and self.pos.x >= LN[0].rect.x:
                 self.pos.y = LN[0].rect.top - 20
         
-        RN = pygame.sprite.spritecollide(P1, holla.group_wall_corner_RN, False)
+        RN = pygame.sprite.spritecollide(P1, backdrop.group_wall_corner_RN, False)
         if RN:
             if RN and self.pos.x > RN[0].rect.x + 32:
                 self.pos.x = RN[0].rect.right + 11
             if RN and self.pos.x <= RN[0].rect.x + 32:
                 self.pos.y = RN[0].rect.top - 20
         
-        LS = pygame.sprite.spritecollide(P1, holla.group_wall_corner_LS, False)
+        LS = pygame.sprite.spritecollide(P1, backdrop.group_wall_corner_LS, False)
         if LS:
             if LS and self.pos.x <= LS[0].rect.x:
                 self.pos.x = LS[0].rect.left - 11
             if LS and self.pos.x > LS[0].rect.x:
                 self.pos.y = LS[0].rect.bottom + 11
         
-        RS = pygame.sprite.spritecollide(P1, holla.group_wall_corner_RS, False)
+        RS = pygame.sprite.spritecollide(P1, backdrop.group_wall_corner_RS, False)
         if RS:
             if RS and self.pos.x > RS[0].rect.x + 32:
                 self.pos.x = RS[0].rect.right + 11
@@ -266,8 +285,17 @@ class Player(pygame.sprite.Sprite):
     # This creates the window around teh player
     def P_view(self):
         player_view = pygame.surface.Surface((160,128))
+        #puts player in middle of the screen
         offset_x = self.pos.x - (160/2)
         offset_y = self.pos.y - (128/2)
+        #offset works by defining the area to be taken from the canvas
+        #since we want the character in the middle of the screen,
+        #the offset represents the top left corner of the player view, and is
+        #always half the screen surface size away. this number is subtracted from the 
+        #players pos in order to find what part of the canvas they are on
+
+
+        #stops camera from exceeding map bounds
         if self.pos.x < 160/2:
             offset_x = 0
         if self.pos.y < 128/2:
@@ -276,6 +304,8 @@ class Player(pygame.sprite.Sprite):
             offset_x = 640-160
         if self.pos.y > 480-64:
             offset_y = 480-128
+        
+        #area to be taken from canvas
         player_pos = (offset_x, offset_y, 160, 128) 
 
         player_view.blit(canvas, (0,0), player_pos)
@@ -312,7 +342,6 @@ P1 = Player()
 ########################################################################################
 
 ui_sprites = Spritesheet('UI items.png')
-2
 
 class UI:
     def __init__(self):
@@ -383,11 +412,7 @@ class UI:
             return False
         else:
             return True
-        
-
-       
-            
-            
+         
 UI = UI() 
 
 class Button:
@@ -452,6 +477,44 @@ class Button:
                 
                 return True
             
+########################################################################################
+####################                   #################################################
+####################     Interaction    #################################################
+####################                   #################################################
+########################################################################################
+
+#finds mouse pos relative to canvas
+def get_true_mouse():
+    #taking the player coords and finding the topleft of the display surf
+    offset_x = P1.pos.x - 80
+    offset_y = P1.pos.y - 64
+   
+    if P1.pos.x < 160/2:
+        offset_x = 0
+    if P1.pos.y < 128/2:
+        offset_y = 0
+    if P1.pos.x > 640-80: ## I might should change these to varibles in the future
+        offset_x = 640-160
+    if P1.pos.y > 480-64:
+        offset_y = 480-128
+
+    canvas_topleft_pos = (offset_x, offset_y)
+    #actual mouse pos relative to canvas
+    true_mouse_pos = (offset_x + mouse_pos_x, offset_y + mouse_pos_y)
+    return true_mouse_pos
+#now I need a function to print a selector tile depending on which tile the cursor is on
+def get_tile():
+    #divides mouse pos by 32, then rounds down to find positions in the map matrix
+    tile_pos = (math.floor(true_mouse_x/32), math.floor(true_mouse_y/32))
+    return tile_pos
+#selector sprite
+selector = Spritesheet('selector.png')    
+S1 = selector.get_sprite(0,0,32,32)
+#changing tile on ground
+def till():
+    if rw_com_garden[tile_pos_y][tile_pos_x] == 0:
+        if pygame.mouse.get_pressed()[0]:
+            rw_com_garden[tile_pos_y][tile_pos_x] = 10
 #####Game Loop##########
 
 while running:
@@ -476,20 +539,39 @@ while running:
 
     # Normal Game essentially
     if not inv_paused:
+            #deletes previous shit
             canvas.fill((0,0,0))
+            yolo = backdrop.parse_mat(rw_com_garden)
+            yolo_map = backdrop.collide_map(rw_com_garden)
+            #lets player move
             P1.move()
-
+            #collision test
             P1.c_test()
-    
-    
+            #finds mouse pos relative to canvas
+            true_mouse = get_true_mouse()
+            true_mouse_x = true_mouse[0]
+            true_mouse_y = true_mouse[1]
+            #finds tile that the cursor is on
+            tile_pos = get_tile()
+            tile_pos_x = tile_pos[0]
+            tile_pos_y = tile_pos[1]
+            #updates 0 tiles into 10 tiles (tilled ground)
+            #when mouse is pressed
+            till()
+            #prints map on canvas
             canvas.blit(yolo, (0,0))
+            #printing the selector ?
+            canvas.blit(S1,(tile_pos_x*32, tile_pos_y*32))
+            #prints player on canvas
             canvas.blit(P1.surf, P1.rect)
-    #test
-    #canvas.blit(UI.heart_full_surf_Big, (0,0))
-    
+
+            #prints players view on screeen
             player_view = P1.P_view()
             displaysurf.blit(player_view, (0,0))
+
+            #displays ui
             UI.show() 
+
             
     #Game paused for inventory
     if inv_paused:
